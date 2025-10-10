@@ -1,0 +1,84 @@
+# =======================================
+# JudaS .gitattributes (Windows/MinGW friendly)
+# Keep source files LF; allow CRLF only where appropriate
+# =======================================
+
+# --- Core line ending policy ---
+* text=auto
+
+# --- Source code: enforce LF ---
+*.c      text eol=lf
+*.cc     text eol=lf
+*.cpp    text eol=lf
+*.cxx    text eol=lf
+*.h      text eol=lf
+*.hh     text eol=lf
+*.hpp    text eol=lf
+*.hxx    text eol=lf
+*.inl    text eol=lf
+Makefile text eol=lf
+*.mk     text eol=lf
+
+# --- Scripts: LF for POSIX shells, CRLF for Windows batch/powershell ---
+*.sh     text eol=lf
+*.bash   text eol=lf
+*.ps1    text eol=crlf
+*.bat    text eol=crlf
+*.cmd    text eol=crlf
+
+# --- Config/metadata: LF for portability ---
+*.yml    text eol=lf
+*.yaml   text eol=lf
+*.toml   text eol=lf
+*.json   text eol=lf
+*.ini    text eol=lf
+*.cfg    text eol=lf
+*.md     text eol=lf
+*.txt    text eol=lf
+*.editorconfig text eol=lf
+.gitattributes text eol=lf
+.gitignore     text eol=lf
+
+# --- Binaries: mark as binary (no diff/merge) ---
+*.exe    binary
+*.dll    binary
+*.lib    binary
+*.a      binary
+*.so     binary
+*.dylib  binary
+*.pdb    binary
+*.ilk    binary
+*.dwo    binary
+*.o      binary
+*.obj    binary
+
+# --- Chess engine assets (NNUE, tablebases) as binary ---
+*.nnue   binary -diff -merge
+*.onnx   binary -diff -merge
+*.pb     binary -diff -merge
+tb/**    binary -diff -merge
+tablebases/** binary -diff -merge
+*.rtb*   binary -diff -merge
+*.gtb*   binary -diff -merge
+*.dtz    binary -diff -merge
+*.rtbz   binary -diff -merge
+
+# --- Common binary assets ---
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.webp   binary
+*.ico    binary
+*.pdf    binary
+*.zip    binary
+*.7z     binary
+*.gz     binary
+*.xz     binary
+*.tar    binary
+
+# --- Optional: exclude CI/dev-only files from "git archive" tarballs ---
+.github/**          export-ignore
+tools/**            export-ignore
+tests/**            export-ignore
+bench/**            export-ignore

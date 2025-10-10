@@ -1,41 +1,119 @@
-# Prerequisites
+# =======================================
+# JudaS .gitignore (C++ + MinGW + Stockfish-derived)
+# =======================================
+
+# ---- Prerequisites ----
 *.d
 
-# Compiled Object files
+# ---- Compiled Object files ----
 *.slo
 *.lo
 *.o
 *.obj
 
-# Precompiled Headers
+# ---- Precompiled Headers ----
 *.gch
 *.pch
 
-# Linker files
+# ---- Linker files ----
 *.ilk
 
-# Debugger Files
+# ---- Debugger files ----
 *.pdb
+*.stackdump    # MSYS2 / MinGW crash dumps
 
-# Compiled Dynamic libraries
+# ---- Compiled Dynamic libraries ----
 *.so
 *.dylib
 *.dll
 
-# Fortran module files
+# ---- Fortran module files ----
 *.mod
 *.smod
 
-# Compiled Static libraries
+# ---- Compiled Static libraries ----
 *.lai
 *.la
 *.a
 *.lib
 
-# Executables
+# ---- Executables ----
 *.exe
 *.out
 *.app
 
-# debug information files
+# ---- Debug information ----
 *.dwo
+
+# ---- Build / Output directories ----
+/build/
+/build-*/
+/cmake-build-*/
+/CMakeFiles/
+/CMakeCache.txt
+Makefile
+/build.ninja
+*.ninja
+.ninja_deps
+.ninja_log
+/obj/
+/bin/
+/out/
+/release/
+/debug/
+/dist/
+/compile_commands.json
+/Testing/
+/CTestTestfile.cmake
+
+# ---- IDE / Tooling ----
+.vscode/
+.idea/
+.vs/
+*.code-workspace
+.ccls
+.ccls-cache/
+.clangd/
+.cache/
+
+# ---- Logs / Coverage / Profiling ----
+*.log
+*.gcda
+*.gcno
+*.gcov
+lcov.info
+coverage/
+sanitizer*.log
+profile-data/
+
+# ---- OS / Miscellaneous ----
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ---- Chess engine specific (Stockfish-derived) ----
+# Neural network files (NNUE, ONNX, etc.)
+*.nnue
+*.pb
+*.onnx
+
+# Tablebases (Gaviota, Syzygy, etc.)
+tb/
+tablebases/
+*.rtb*
+*.gtb*
+*.dtz
+*.rtbz
+
+# ---- Benchmarks / Test output ----
+/bench*/
+/tests/tmp/
+/tests/output/
+/tmp/
+
+# ---- Packaging / Archives ----
+*.tar
+*.zip
+*.7z
+*.gz
+
