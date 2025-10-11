@@ -51,7 +51,6 @@
 /cmake-build-*/
 /CMakeFiles/
 /CMakeCache.txt
-Makefile
 /build.ninja
 *.ninja
 .ninja_deps
@@ -116,4 +115,3 @@ tablebases/
 *.zip
 *.7z
 *.gz
-
