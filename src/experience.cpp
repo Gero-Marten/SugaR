@@ -27,7 +27,10 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
+#include <unordered_set>
+#include <type_traits>
 #include "misc.h"
+#include "movegen.h" 
 #include "position.h"
 #include "thread.h"
 #include "experience.h"
@@ -628,11 +631,15 @@ class ExperienceData {
         }
         else
         {
+            const double frag = expCount > 0
+                                ? 100.0 * static_cast<double>(duplicateMoves) / static_cast<double>(expCount)
+                                : 0.0; // avoid NaN when file/header has 0 moves
+
             sync_cout << "info string " << fn_disp << " -> Total moves: " << expCount
                       << ". Total positions: " << _mainExp.size()
                       << ". Duplicate moves: " << duplicateMoves
                       << ". Fragmentation: " << std::setprecision(2) << std::fixed
-                      << 100.0 * (double) duplicateMoves / (double) expCount << "%" << sync_endl;
+                      << frag << "%" << sync_endl;
         }
 
         return true;
@@ -754,12 +761,29 @@ class ExperienceData {
         }
         else
         {
-            for (auto& newExp : {_newPvExp, _newMultiPvExp})
+            // Deduplicate new entries (same key+move) within this incremental batch
+            std::unordered_set<uint64_t> seen;
+
+            // NOTE: do NOT cast e->move; read its raw bytes instead.
+            auto km_hash = [](const ExpEntryEx* e) -> uint64_t {
+                uint64_t mv = 0;
+                const size_t n = (sizeof(mv) < sizeof(e->move)) ? sizeof(mv) : sizeof(e->move);
+                std::memcpy(&mv, &e->move, n);
+                return static_cast<uint64_t>(e->key) ^ (mv * 0x9E3779B185EBCA87ULL);
+            };
+
+            usize pvWritten = 0, mpvWritten = 0;
+
+            for (auto* const expList : {&_newPvExp, &_newMultiPvExp})
             {
-                for (const ExpEntryEx* exp : newExp)
+                for (const ExpEntryEx* exp : *expList)
                 {
                     if (exp->depth < MinDepth)
                         continue;
+
+                    const uint64_t sig = km_hash(exp);
+                    if (!seen.insert(sig).second)
+                        continue; // skip duplicate (same position key + move)
 
                     if (!write_entry(exp, false))
                     {
@@ -768,11 +792,13 @@ class ExperienceData {
                           << fn << "]" << sync_endl;
                         return false;
                     }
+
+                    if (expList == &_newPvExp) ++pvWritten; else ++mpvWritten;
                 }
             }
 
-            sync_cout << "info string Saved " << _newPvExp.size() << " PV and "
-                      << _newMultiPvExp.size() << " MultiPV entries to experience file: " << fn
+            sync_cout << "info string Saved " << pvWritten << " PV and "
+                      << mpvWritten << " MultiPV entries to experience file: " << fn
                       << sync_endl;
         }
 
@@ -946,6 +972,30 @@ bool            learningPaused    = false;
 ////////////////////////////////////////////////////////////////
 // Global experience functions
 ////////////////////////////////////////////////////////////////
+
+std::atomic<bool> g_benchMode{false};
+
+void touch() {
+    const std::string filename = Options["Experience File"];
+    if (filename.empty())
+        return;
+
+    std::fstream out;
+    out.open(Utility::map_path(filename), std::ios::out | std::ios::binary | std::ios::app);
+    if (!out.is_open())
+        return;
+
+    // If the file is new, write only the signature/header
+    out.seekg(0, std::fstream::end);
+    const usize length = (usize)out.tellg();
+    out.seekg(0, std::fstream::beg);
+
+    if (length == 0) {
+        out.seekp(0, std::fstream::beg);
+        out << Current::ExperienceSignature;  // no entries, no log
+    }
+}
+
 void init() {
     experienceEnabled = Options["Experience Enabled"];
 
@@ -1658,25 +1708,31 @@ void pause_learning() { learningPaused = true; }
 void resume_learning() { learningPaused = false; }
 bool is_learning_paused() { return learningPaused; }
 
-
 void add_pv_experience(const Key k, const Move m, const Value v, const Depth d) {
-    if (!currentExperience)
+    // Drop writes during bench, when disabled, paused, or readonly
+    if (!currentExperience
+        || g_benchMode.load(std::memory_order_relaxed)
+        || !experienceEnabled
+        || learningPaused
+        || (bool)Options["Experience Readonly"])
         return;
-
-    assert((bool) Options["Experience Readonly"] == false);
 
     currentExperience->add_pv_experience(k, m, v, d);
 }
 
 void add_multipv_experience(const Key k, const Move m, const Value v, const Depth d) {
-    if (!currentExperience)
+    // Drop writes during bench, when disabled, paused, or readonly
+    if (!currentExperience
+        || g_benchMode.load(std::memory_order_relaxed)
+        || !experienceEnabled
+        || learningPaused
+        || (bool)Options["Experience Readonly"])
         return;
-
-    assert((bool) Options["Experience Readonly"] == false);
 
     currentExperience->add_multipv_experience(k, m, v, d);
 }
 }
+
 // ===== Local helpers for the wrappers =====
 
 namespace {
@@ -1729,7 +1785,7 @@ void import_pgn(int argc, char* argv[]) {
 }
 
 void pgn_to_exp(int argc, char* argv[]) {
-    (void)argv; 
+    (void)argv;
     wait_for_loading_finished();
     if (argc < 2) { info_line("Syntax: pgn_to_exp <source.pgn> <dest.exp>"); return; }
     info_line("pgn_to_exp not supported in this build. Convert PGN -> CPGN upstream, then use cpgn_to_exp.");

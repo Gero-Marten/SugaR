@@ -389,6 +389,36 @@ void UCIEngine::loop() {
             }
         }
 #endif
+
+        else if (token == "legal") {
+            // Print every LEGAL move in the current engine position.
+            // Format: "legal <m1> <m2> ..."
+            StateInfo st{};
+            Position  pos;
+            const bool chess960 = engine.get_options()["UCI_Chess960"];
+            pos.set(engine.fen(), chess960, &st);
+            sync_cout_start();
+            std::cout << "legal";
+            for (Move m : MoveList<LEGAL>(pos))
+                std::cout << ' ' << UCIEngine::move(m, chess960);
+            std::cout << std::endl;
+            sync_cout_end();
+        }
+
+        else if (token == "moves") {
+            // Alias of 'legal' for viewers expecting 'moves' token.
+            // Format: "moves <m1> <m2> ..."
+            StateInfo st{};
+            Position  pos;
+            const bool chess960 = engine.get_options()["UCI_Chess960"];
+            pos.set(engine.fen(), chess960, &st);
+            sync_cout_start();
+            std::cout << "moves";
+            for (Move m : MoveList<LEGAL>(pos))
+                std::cout << ' ' << UCIEngine::move(m, chess960);
+            std::cout << std::endl;
+            sync_cout_end();
+        }
         else if (!token.empty() && token[0] != '#') {
             sync_cout << "Unknown command: '" << cmd
                       << "'. Type help for more information." << sync_endl;
@@ -456,6 +486,11 @@ void UCIEngine::go(std::istringstream& is) {
 }
 
 void UCIEngine::bench(std::istream& args) {
+#if defined(SUG_FIXED_ZOBRIST)
+    // Bench mode ON: create .exp header only, suppress entry writes
+    Experience::g_benchMode.store(true, std::memory_order_relaxed);
+    Experience::touch();
+#endif
     std::string token;
     uint64_t    num, nodes = 0, cnt = 1;
     uint64_t    nodesSearched = 0;
