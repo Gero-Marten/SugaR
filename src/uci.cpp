@@ -555,11 +555,21 @@ void UCIEngine::bench(std::istream& args) {
               << "\nNodes searched  : " << nodes    //
               << "\nNodes/second    : " << 1000 * nodes / elapsed << std::endl;
 
+#if defined(SUG_FIXED_ZOBRIST)
+    // Bench mode OFF
+    Experience::g_benchMode.store(false, std::memory_order_relaxed);
+#endif
+
     // reset callback, to not capture a dangling reference to nodesSearched
     engine.set_on_update_full([&](const auto& i) { on_update_full(i, options["UCI_ShowWDL"]); });
 }
 
 void UCIEngine::benchmark(std::istream& args) {
+#if defined(SUG_FIXED_ZOBRIST)
+    // Bench mode ON: create .exp header only, suppress entry writes
+    Experience::g_benchMode.store(true, std::memory_order_relaxed);
+    Experience::touch();
+#endif
     // Probably not very important for a test this long, but include for completeness and sanity.
     static constexpr int NUM_WARMUP_POSITIONS = 3;
 
@@ -719,6 +729,11 @@ void UCIEngine::benchmark(std::istream& args) {
               << "\nNodes/second               : " << 1000 * nodes / totalTime << std::endl;
 
     // clang-format on
+
+#if defined(SUG_FIXED_ZOBRIST)
+    // Bench mode OFF
+    Experience::g_benchMode.store(false, std::memory_order_relaxed);
+#endif
 
     init_search_update_listeners();
 
@@ -931,6 +946,10 @@ void UCIEngine::on_bestmove(std::string_view bestmove, std::string_view ponder) 
     if (!ponder.empty())
         std::cout << " ponder " << ponder;
     std::cout << sync_endl;
+
+#if defined(HYP_FIXED_ZOBRIST)
+    Experience::save();
+#endif
 }
 
 }  // namespace Sugar
