@@ -1375,7 +1375,7 @@ if constexpr (!PvNode)
         assert((ss - 1)->currentMove != Move::null());
 
         // Null move dynamic reduction based on depth
-        Depth R = 6 + depth / 3;
+        Depth R = 6 + depth / 3 + improving;
 
         ss->currentMove                   = Move::null();
         ss->continuationHistory           = &continuationHistory[0][0][NO_PIECE][0];
